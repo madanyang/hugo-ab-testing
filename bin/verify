@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+# Enable strict mode
+set -euo pipefail
+
+# Function to log errors and exit
+log_error() {
+    echo "ERROR: $*" >&2
+    exit 1
+}
+
+# Clean previous builds
+if ! hugo --cleanDestinationDir; then
+    log_error "Failed to clean destination directory"
+fi
+
+# Build the site with verbose output
+if ! hugo --logLevel info; then
+    log_error "Hugo build failed"
+fi
+
+# Verify file generation
+echo -e "\n=== Generated Files ==="
+if [[ ! -d public ]]; then
+    log_error "Public directory does not exist"
+fi
+ls -l public/
+
+# Function to extract and display key content
+extract_content() {
+    local file=$1
+    local filepath="public/${file}"
+    
+    if [[ ! -f "$filepath" ]]; then
+        log_error "File not found: $filepath"
+    fi
+    
+    echo -e "\n=== $file Content ==="
+    
+    # Extract main content
+    if ! grep -A 10 "<h1>" "$filepath"; then
+        echo "No <h1> content found in $file"
+    fi
+    
+    # Extract debug information
+    if ! grep -A 5 "Template Diagnostics" "$filepath"; then
+        echo "No template diagnostics found in $file"
+    fi
+}
+
+# Extract content from both files
+extract_content "index.html"
+extract_content "test.html"
+
+# Compare files
+echo -e "\n=== File Difference ==="
+# Use a more robust file comparison
+if ! diff public/en/index.html public/test.html; then
+    echo "Files differ as expected"
+else
+    log_error "Unexpected file similarity"
+fi
+
+# Detailed comparison
+if cmp -s public/en/index.html public/test.html; then
+    log_error "Files are identical!"
+else
+    echo "SUCCESS: Different templates used for index.html and test.html"
+fi
+
+# Additional validation
+validate_file() {
+    local file=$1
+    local expected_content=$2
+    local filepath="public/${file}"
+    
+    if [[ ! -f "$filepath" ]]; then
+        log_error "File not found: $filepath"
+    fi
+    
+    if ! grep -q "$expected_content" "$filepath"; then
+        log_error "$file does not contain expected content: $expected_content"
+    fi
+}
+
+validate_file "index.html" "Control Version (A)"
+validate_file "test.html" "Test Version (B)"
+
+echo -e "\nAB Testing Configuration Verified Successfully!"

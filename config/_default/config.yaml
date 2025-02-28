@@ -1,0 +1,20 @@
+baseURL: "http://localhost:1313/"
+languageCode: "en-us"
+title: "AB Testing Verification"
+
+outputs:
+  home:
+    - HTML
+    - TESTHTML
+
+outputFormats:
+  HTML:
+    baseName: "index"
+    isHTML: true
+    mediaType: "text/html"
+    permalinkable: true
+  TESTHTML:
+    baseName: "test"
+    isHTML: true
+    mediaType: "text/html"
+    permalinkable: true
